@@ -12,6 +12,8 @@ model Food {
   id    Int     @id @default(autoincrement()) 
   name String
   price String
+  img String
+  ingredients String
   category FoodCategory @relation(fields: [foodCategoryId], references: [id])
   foodCategoryId Int
 
@@ -20,10 +22,29 @@ model Food {
 } 
 
 model FoodCategory { 
-  id        Int     @id @default(autoincrement()) 
-  title     String
-  foods Food[]
+  id  Int     @id @default(autoincrement()) 
+  categoryName  String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-} 
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  email String
+  password String
+  phoneNumber String
+  address String
+  role Role @default(USER)
+  orderedFoods
+  ttl DateTime @default(now())
+  isVerifed Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER USER
+  ADMIN ADMIN
+}
