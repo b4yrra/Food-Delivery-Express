@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 
 export const updateUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { email, password, age, phoneNumber, address, role } = req.body;
+  const { email, password, age, phoneNumber, address } = req.body;
 
   try {
     const updatedUser = await prisma.user.update({
@@ -11,6 +11,9 @@ export const updateUser = async (req: Request, res: Response) => {
       data: {
         email,
         password,
+        age,
+        phoneNumber,
+        address,
       },
     });
 
