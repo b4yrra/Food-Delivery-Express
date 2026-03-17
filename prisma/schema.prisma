@@ -16,7 +16,7 @@ model Food {
   ingredients String
   category FoodCategory @relation(fields: [foodCategoryId], references: [id])
   foodCategoryId Int
-
+  foodOrderItems FoodOrderItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 } 
@@ -24,27 +24,52 @@ model Food {
 model FoodCategory { 
   id  Int     @id @default(autoincrement()) 
   categoryName  String
-
+  foods Food[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model User {
   id Int @id @default(autoincrement())
-  email String
+  email String @unique
+  role Role @default(User)
   password String
-  phoneNumber String
-  address String
-  role Role @default(USER)
-  orderedFoods
+  orders FoodOrder[]
   ttl DateTime @default(now())
-  isVerifed Boolean
-
+  address String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 enum Role {
-  USER USER
-  ADMIN ADMIN
+  User
+  Admin
+}
+
+model FoodOrder {
+  id Int @id @default(autoincrement())
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+  totalPrice String
+  status FoodOrderStatus @default(Pending)
+  foodOrderItems FoodOrderItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt 
+}
+
+enum FoodOrderStatus {
+  Pending
+  Canceled
+  Delivered
+}
+
+model FoodOrderItem {
+  id Int @id @default(autoincrement())
+  quantity Int
+  food Food @relation(fields: [foodId], references: [id])
+  foodId Int
+  order FoodOrder @relation(fields: [foodOrderId], references: [id])
+  foodOrderId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt  
 }
