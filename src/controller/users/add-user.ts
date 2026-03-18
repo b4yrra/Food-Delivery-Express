@@ -3,7 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { Request, Response } from "express";
 
 export const addUser = async (req: Request, res: Response) => {
-  const { email, password, address, age, phoneNumber } = req.body;
+  const { email, password, address } = req.body;
 
   try {
     const user = await prisma.user.create({
@@ -11,8 +11,6 @@ export const addUser = async (req: Request, res: Response) => {
         email,
         password,
         address,
-        age,
-        phoneNumber,
       },
     });
 
