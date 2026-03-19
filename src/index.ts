@@ -3,6 +3,7 @@ import userRouter from "./routes/users";
 import orderRouter from "./routes/orders";
 import foodRouter from "./routes/foods";
 import categoryRouter from "./routes/categories";
+import authRouter from "./routes/auth";
 
 const app = express();
 app.use(express.json());
@@ -11,5 +12,6 @@ app.use("/users", userRouter);
 app.use("/orders", orderRouter);
 app.use("/foods", foodRouter);
 app.use("/categories", categoryRouter);
+app.use("/auth", authRouter);
 
 app.listen(3000, () => console.log("Server running on 3000"));
