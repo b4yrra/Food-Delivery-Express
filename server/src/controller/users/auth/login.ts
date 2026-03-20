@@ -32,7 +32,7 @@ export const loginUser = async (req: Request, res: Response) => {
       { expiresIn: "1h" },
     );
 
-    res.status(200).json({ accessToken });
+    res.status(200).json({ message: "Success", accessToken });
   } else {
     res.status(400).json({ message: "Invalid" });
   }
