@@ -20,7 +20,7 @@ export const loginUser = async (req: Request, res: Response) => {
   const validPassword = await bcrypt.compare(password, user.password);
 
   if (validPassword) {
-    const accessToken = jwt.sign(
+    const secretToken = jwt.sign(
       {
         data: {
           userId: user.id,
@@ -32,7 +32,7 @@ export const loginUser = async (req: Request, res: Response) => {
       { expiresIn: "1h" },
     );
 
-    res.status(200).json({ message: "Success", accessToken });
+    res.status(200).json({ message: "Success", secretToken });
   } else {
     res.status(400).json({ message: "Invalid" });
   }

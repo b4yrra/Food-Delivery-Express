@@ -1,28 +1,29 @@
 import { Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
-import { Food } from "@prisma/client";
+
+type Food = {
+  id: number;
+  price: string;
+  [key: string]: any;
+};
 
 type OrderItems = {
   foodId: number;
   quantity: number;
 };
 
-type BodyType = {
-  userId: number;
-  orderItems: OrderItems[];
-};
-
 type FoodWithQuantity = Food & { quantity: number };
 
 export const addOrder = async (req: Request, res: Response) => {
-  const { userId, orderItems }: BodyType = req.body;
+  const { userId, orderItems }: { orderItems: OrderItems[]; userId: number } =
+    req.body;
 
   const totalPrice = await calcTotalPrice(orderItems);
 
   try {
     const order = await prisma.foodOrder.create({
       data: {
-        userId,
+        userId: userId,
         status: "Pending",
         totalPrice: String(totalPrice),
         foodOrderItems: {
