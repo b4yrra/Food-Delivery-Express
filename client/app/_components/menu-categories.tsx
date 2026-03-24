@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { Category } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 type FoodCategoriesProps = {
   categories: Category[];
@@ -7,11 +7,17 @@ type FoodCategoriesProps = {
 
 export const FoodCategories = ({ categories = [] }: FoodCategoriesProps) => {
   return (
-    <div>
+    <div className="flex gap-3">
       {categories.map((category) => (
-        <Button key={category.id} className="text-black">
-          {category.categoryName}
-        </Button>
+        <div
+          key={category.id}
+          className="flex gap-2 text-[14px] font-mono py-2 px-3 border border-slate-400 rounded-full"
+        >
+          <p className="font-medium">{category.categoryName}</p>
+          <p className="bg-black text-white px-2 rounded-full font-semibold">
+            {category.foods.length}
+          </p>
+        </div>
       ))}
     </div>
   );

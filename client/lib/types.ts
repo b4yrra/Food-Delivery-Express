@@ -17,4 +17,5 @@ export interface Category {
   createdAt: string;
   updatedAt: string;
   categoryName: string;
+  foods: Food[];
 }
