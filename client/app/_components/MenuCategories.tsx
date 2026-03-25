@@ -1,5 +1,4 @@
 import { Category } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
 
 type FoodCategoriesProps = {
   categories: Category[];

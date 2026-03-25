@@ -1,6 +1,7 @@
 import { getCategories } from "@/lib/services/get-catergories";
 import { Category } from "@/lib/types";
-import { FoodCategories } from "../_components/menu-categories";
+import { FoodCategories } from "../_components/MenuCategories";
+import { AddCategory } from "../_components/AddCategory";
 
 const FoodsPage = async () => {
   const categories: Category[] = await getCategories();
@@ -11,7 +12,10 @@ const FoodsPage = async () => {
         <div className="text-[20px] font-semibold font-mono">
           Dishes category
         </div>
-        <FoodCategories categories={categories} />
+        <div className="flex gap-3 items-center">
+          <FoodCategories categories={categories} />
+          <AddCategory />
+        </div>
       </div>
     </div>
   );

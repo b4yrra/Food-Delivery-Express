@@ -25,14 +25,6 @@ export function AppSidebar() {
         </div>
       </div>
       <div className="flex flex-col gap-5">
-        <Link href="/">
-          <Button
-            className={`flex gap-3 text-[14px] w-full cursor-pointer p-5 rounded-full ${pathname === "/" ? "bg-black" : "bg-transparent text-black"}`}
-          >
-            <House />
-            Home
-          </Button>
-        </Link>
         <Link href="/foods">
           <Button
             className={`flex gap-3 text-[14px] w-full text-start cursor-pointer p-5 rounded-full ${pathname === "/foods" ? "bg-black" : "bg-transparent text-black"}`}
@@ -47,6 +39,14 @@ export function AppSidebar() {
           >
             <Truck />
             Orders
+          </Button>
+        </Link>
+        <Link href="/settings">
+          <Button
+            className={`flex gap-3 text-[14px] w-full text-start cursor-pointer p-5 rounded-full ${pathname === "/settings" ? "bg-black" : "bg-transparent text-black"}`}
+          >
+            <Settings />
+            Settings
           </Button>
         </Link>
       </div>

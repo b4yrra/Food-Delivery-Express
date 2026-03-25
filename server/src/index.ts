@@ -5,9 +5,11 @@ import foodRouter from "./routes/foods";
 import categoryRouter from "./routes/categories";
 import authRouter from "./routes/auth";
 import middleWareRouter from "./routes/middleware";
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 app.use("/users", userRouter);
 app.use("/orders", orderRouter);
