@@ -46,6 +46,7 @@ export const AddCategory = () => {
     }
 
     setLoading(false);
+    setCategoryName("");
   };
 
   return (
