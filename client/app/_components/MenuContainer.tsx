@@ -27,7 +27,6 @@ export const MenuContainer = ({ categories, foods }: Props) => {
             selectedId={selectedId}
             onSelect={setSelectedId}
           />
-          <AddCategory />
         </div>
       </div>
       <div className="flex justify-between items-center">

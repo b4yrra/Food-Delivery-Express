@@ -2,6 +2,10 @@
 
 import { Food, Category } from "@/lib/types";
 import { FoodAddDialog } from "./AddFood";
+import { Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { UpdateFood } from "./UpdateFood";
 
 type FoodProps = {
   foods: Food[];
@@ -14,9 +18,27 @@ export const MenuFoods = ({
   categories = [],
   selectedId,
 }: FoodProps) => {
+  const router = useRouter();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
   const visibleCategories = selectedId
     ? categories.filter((c) => c.id === selectedId)
     : categories;
+
+  const handleDelete = async (e: React.MouseEvent, foodId: number) => {
+    e.stopPropagation();
+    setDeletingId(foodId);
+    try {
+      await fetch(`http://localhost:3000/foods/${foodId}`, {
+        method: "DELETE",
+      });
+      router.refresh();
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,8 +65,16 @@ export const MenuFoods = ({
               {categoryFoods.map((food) => (
                 <div
                   key={food.id}
-                  className="text-[14px] font-mono p-4 border border-[#E4E4E7] rounded-xl shadow-sm transition-all duration-200 hover:bg-black hover:text-white hover:border-black cursor-pointer w-[270.75px] h-[241px]"
+                  className="group relative text-[14px] font-mono p-4 border border-[#E4E4E7] rounded-xl shadow-sm transition-all duration-200 hover:bg-black hover:text-white hover:border-black cursor-pointer w-[270.75px] h-[241px]"
                 >
+                  <button
+                    onClick={(e) => handleDelete(e, food.id)}
+                    disabled={deletingId === food.id}
+                    className="absolute bottom-28 left-8 z-10 p-3 rounded-full cursor-pointer bg-red-500 hover:bg-red-600 text-white transition-all duration-150 disabled:opacity-50"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <UpdateFood food={food} categories={categories} />
                   <div className="flex flex-col gap-3">
                     <div>
                       {food.img === "" ? (
