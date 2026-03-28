@@ -22,7 +22,7 @@ export const FoodCategories = ({
           selectedId === null ? "border-red-500" : "border-slate-400"
         }`}
       >
-        <p className="font-medium">All</p>
+        <p className="font-medium">All Dishes</p>
       </div>
       {categories.map((category) => (
         <div

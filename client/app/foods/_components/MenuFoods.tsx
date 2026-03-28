@@ -86,14 +86,18 @@ export const MenuFoods = ({
                         />
                       )}
                     </div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-3 overflow-hidden h-[60px]">
                       <div className="flex justify-between">
-                        <p className="font-medium text-red-500 text-[14px]">
+                        <p className="font-bold text-red-500 text-[12px]">
                           {food.name}
                         </p>
-                        <div>${food.price}</div>
+                        <div className="font-semibold text-[12px]">
+                          ${food.price}
+                        </div>
                       </div>
-                      <div>{food.ingredients}</div>
+                      <div className="text-[10px] font-semibold">
+                        {food.ingredients}
+                      </div>
                     </div>
                   </div>
                 </div>

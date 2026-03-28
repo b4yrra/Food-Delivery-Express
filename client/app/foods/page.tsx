@@ -2,7 +2,7 @@ import { getCategories } from "@/lib/services/get-catergories";
 import { getFoods } from "@/lib/services/get-foods";
 import { Category } from "@/lib/types";
 import { Food } from "@/lib/types";
-import { MenuContainer } from "../_components/MenuContainer";
+import { MenuContainer } from "./_components/MenuContainer";
 
 const FoodsPage = async () => {
   const categories: Category[] = await getCategories();
