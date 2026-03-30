@@ -77,7 +77,7 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
       <DialogTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-28 right-8 z-10 p-3 bg-white rounded-full hover:bg-slate-300 text-white transition-all duration-150"
+          className="absolute bottom-28 right-8 z-10 p-3 bg-white rounded-full hover:bg-slate-300 text-white transition-all duration-150 cursor-pointer"
         >
           <Pencil size={14} color="red" />
         </button>

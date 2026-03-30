@@ -26,7 +26,11 @@ export function CategorySelector(props: CategorySelectorProps) {
           <SelectLabel>Category</SelectLabel>
           {categories.map((category) => {
             return (
-              <SelectItem key={category.id} value={String(category.id)}>
+              <SelectItem
+                key={category.id}
+                value={String(category.id)}
+                className="font-mono"
+              >
                 {category.categoryName}
               </SelectItem>
             );

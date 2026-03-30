@@ -6,6 +6,7 @@ import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { UpdateFood } from "./UpdateFood";
+import { Button } from "@/components/ui/button";
 
 type FoodProps = {
   foods: Food[];
@@ -20,6 +21,7 @@ export const MenuFoods = ({
 }: FoodProps) => {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteCat, setDeleteCat] = useState<number | null>(null);
 
   const visibleCategories = selectedId
     ? categories.filter((c) => c.id === selectedId)
@@ -40,6 +42,25 @@ export const MenuFoods = ({
     }
   };
 
+  const handleDeleteCategory = async (
+    e: React.MouseEvent,
+    categoryId: number,
+  ) => {
+    e.stopPropagation();
+    setDeleteCat(categoryId);
+
+    try {
+      await fetch(`http://localhost:3000/categories/${categoryId}`, {
+        method: "DELETE",
+      });
+      router.refresh();
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setDeleteCat(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {visibleCategories.map((category) => {
@@ -56,6 +77,13 @@ export const MenuFoods = ({
               <h2 className="font-mono font-semibold text-[16px]">
                 {category.categoryName}
               </h2>
+              <Button
+                className="cursor-pointer rounded-full"
+                onClick={(e) => handleDeleteCategory(e, category.id)}
+                disabled={deleteCat === category.id}
+              >
+                <Trash2 size={20} />
+              </Button>
             </div>
             <div className="flex gap-3 flex-wrap">
               <FoodAddDialog
@@ -65,7 +93,7 @@ export const MenuFoods = ({
               {categoryFoods.map((food) => (
                 <div
                   key={food.id}
-                  className="group relative text-[14px] font-mono p-4 border border-[#E4E4E7] rounded-xl shadow-sm transition-all duration-200 hover:bg-black hover:text-white hover:border-black cursor-pointer w-[270.75px] h-[241px]"
+                  className="group relative text-[14px] font-mono p-4 border border-[#E4E4E7] rounded-xl shadow-sm transition-all duration-200 hover:border-black cursor-pointer w-[270.75px] h-[241px]"
                 >
                   <button
                     onClick={(e) => handleDelete(e, food.id)}

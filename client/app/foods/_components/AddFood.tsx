@@ -31,6 +31,8 @@ export function FoodAddDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState({});
   const [food, setFood] = useState({
     name: "",
     price: "0",
@@ -41,36 +43,54 @@ export function FoodAddDialog({
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (event) => {
     setFood({ ...food, [event.target.name]: event.target.value });
+
+    setError({ ...error, [event.target.name]: "" });
   };
+  const handleError = () => {
+    const isValid = {};
 
-  const onSelectCategory = (foodCategoryId: number) => {
-    setFood({ ...food, foodCategoryId });
-  };
+    if (food.name === "") {
+      isValid.name = "Enter Dish Name";
+    }
 
-  const handleFileChange: ChangeEventHandler<HTMLInputElement> = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    if (!food.price || food.price === "0") {
+      isValid.price = "Enter Price";
+    }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFood({ ...food, img: reader.result as string });
-    };
-    reader.readAsDataURL(file);
+    if (food.ingredients === "") {
+      isValid.ingredients = "Enter Ingredients";
+    }
+
+    if (food.img === "") {
+      isValid.img = "Upload an Image";
+    }
+
+    setError(isValid);
   };
 
   const onAddFood = async () => {
+    setSubmitted(true);
+
+    if (!food.name || !food.price || !food.ingredients || !food.img) {
+      handleError();
+      return;
+    }
+
     setLoading(true);
+
     try {
       await fetch("http://localhost:3000/foods", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(food),
       });
+
       setOpen(false);
       router.refresh();
     } catch (err) {
       console.log(err);
     }
+
     setLoading(false);
     setFood({
       name: "",
@@ -81,8 +101,20 @@ export function FoodAddDialog({
     });
   };
 
+  const handleOpenChange = (val: boolean) => {
+    setOpen(val);
+    if (!val) {
+      setSubmitted(false);
+      setError({});
+    }
+  };
+
+  const onSelectCategory = (foodCategoryId: number) => {
+    setFood({ ...food, foodCategoryId });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <div className="w-[270.75px] h-[241px] border-dashed border border-red-500 rounded-xl flex justify-center pt-20 transition-all duration-200 hover:bg-red-100 cursor-pointer">
           <div className="text-white bg-red-500 rounded-full w-10 h-10 flex justify-center items-center">
@@ -104,12 +136,14 @@ export function FoodAddDialog({
         <div className="flex justify-between gap-2">
           <div className="flex flex-col gap-2">
             <Label className="min-w-[120px]">Food name</Label>
+
             <Input
               type="text"
               placeholder="Type food name"
               name="name"
               onChange={handleChange}
             />
+            {error.name && <p className="text-red-500 text-xs">{error.name}</p>}
           </div>
           <div className="flex flex-col gap-2">
             <Label className="min-w-[120px]">Food price</Label>
@@ -119,6 +153,9 @@ export function FoodAddDialog({
               name="price"
               onChange={handleChange}
             />
+            {error.price && (
+              <p className="text-red-500 text-xs">{error.price}</p>
+            )}
           </div>
         </div>
 
@@ -130,33 +167,27 @@ export function FoodAddDialog({
             onChange={handleChange}
             className="h-[90px] resize-none"
           />
+          {error.ingredients && (
+            <p className="text-red-500 text-xs">{error.ingredients}</p>
+          )}
         </div>
 
-        <div className="flex flex-col gap-2 ">
-          <Label className="min-w-[120px]">Food image</Label>
-          <div className="relative flex flex-col gap-2 justify-center items-center w-104 h-60 bg-slate-100 rounded-xl">
-            {food.img ? (
-              <img
-                src={food.img}
-                alt="preview"
-                className="absolute w-full h-full object-cover rounded-lg"
-              />
-            ) : (
-              <div className="absolute flex flex-col items-center gap-2">
-                <Image size={25} />
-                <div className="text-black text-[14px] font-medium">
-                  Browse or Drop Image
-                </div>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              name="picture"
-              className="border h-full w-full rounded-lg p-3 text-transparent border-slate-300 cursor-pointer bg-[#7F7F800D] opacity-0 absolute"
+        <div className={`flex flex-col gap-2 ${food.img ? "" : "mb-30"}`}>
+          <Label className="min-w-[120px]">Food image URL</Label>
+          <Input
+            type="text"
+            placeholder="Paste image URL..."
+            name="img"
+            onChange={handleChange}
+          />
+          {food.img && (
+            <img
+              src={food.img}
+              alt="preview"
+              className="w-full h-40 object-cover rounded-lg"
             />
-          </div>
+          )}
+          {error.img && <p className="text-red-500 text-xs">{error.img}</p>}
         </div>
 
         {!defaultCategoryId && (
@@ -169,7 +200,7 @@ export function FoodAddDialog({
           </div>
         )}
 
-        <DialogFooter className="sm:justify-end">
+        <DialogFooter className="sm:justify-end items-center bg-slate-100">
           <DialogClose asChild>
             <Button type="button" variant="outline">
               Close
