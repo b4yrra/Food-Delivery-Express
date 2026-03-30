@@ -1,5 +1,3 @@
-/// Food Types
-
 export interface Food {
   id: number;
   name: string;
@@ -18,4 +16,24 @@ export interface Category {
   updatedAt: string;
   categoryName: string;
   foods: Food[];
+}
+
+export interface Order {
+  id: number;
+  userId: number;
+  totalPrice: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface User {
+  id: number;
+  email: string;
+  role: string;
+  password: string;
+  ttl: string;
+  address: string;
+  createdAt: string;
+  updatedAt: string;
 }
