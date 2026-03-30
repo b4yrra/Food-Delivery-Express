@@ -2,15 +2,17 @@
 
 import { Food, Category } from "@/lib/types";
 import { FoodAddDialog } from "./AddFood";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { UpdateFood } from "./UpdateFood";
 import { Button } from "@/components/ui/button";
+import { UpdateCategory } from "./EditCategory";
 
 type FoodProps = {
   foods: Food[];
   categories: Category[];
+  category: Category;
   selectedId: number | null;
 };
 
@@ -77,13 +79,16 @@ export const MenuFoods = ({
               <h2 className="font-mono font-semibold text-[16px]">
                 {category.categoryName}
               </h2>
-              <Button
-                className="cursor-pointer rounded-full"
-                onClick={(e) => handleDeleteCategory(e, category.id)}
-                disabled={deleteCat === category.id}
-              >
-                <Trash2 size={20} />
-              </Button>
+              <div className="flex gap-2">
+                <UpdateCategory category={category} />
+                <Button
+                  className="cursor-pointer rounded-full"
+                  onClick={(e) => handleDeleteCategory(e, category.id)}
+                  disabled={deleteCat === category.id}
+                >
+                  <Trash2 size={20} />
+                </Button>
+              </div>
             </div>
             <div className="flex gap-3 flex-wrap">
               <FoodAddDialog

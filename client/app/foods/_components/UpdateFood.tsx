@@ -42,16 +42,6 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
     setUpdatedFood({ ...updatedFood, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setUpdatedFood({ ...updatedFood, img: reader.result as string });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const onSelectCategory = (foodCategoryId: number) => {
     setUpdatedFood({ ...updatedFood, foodCategoryId });
   };
@@ -123,29 +113,21 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label>Food image</Label>
-          <div className="relative flex flex-col gap-2 justify-center items-center w-104 h-60 bg-slate-100 rounded-xl">
-            {updatedFood.img ? (
-              <img
-                src={updatedFood.img}
-                alt="preview"
-                className="absolute w-full h-full object-cover rounded-lg"
-              />
-            ) : (
-              <div className="absolute flex flex-col items-center gap-2">
-                <Image size={25} />
-                <div className="text-black text-[14px] font-medium">
-                  Browse or Drop Image
-                </div>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="border h-full w-full rounded-lg p-3 text-transparent border-slate-300 cursor-pointer bg-[#7F7F800D] opacity-0 absolute"
+          <Label>Food image URL</Label>
+          <Input
+            type="text"
+            placeholder="Paste image URL..."
+            name="img"
+            value={updatedFood.img}
+            onChange={handleChange}
+          />
+          {updatedFood.img && (
+            <img
+              src={updatedFood.img}
+              alt="preview"
+              className="w-full h-40 object-cover rounded-lg"
             />
-          </div>
+          )}
         </div>
 
         <div className="flex items-center">
