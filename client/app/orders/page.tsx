@@ -1,296 +1,343 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  Calendar,
-  MoreVertical,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
-
-// Importing your specific types and services
+import { useEffect, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { getOrders } from "@/lib/services/get-orders";
 import { getUsers } from "@/lib/services/get-users";
 import { Order, User } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
-interface OrderWithDetails extends Order {
-  user?: User;
-}
+type DeliveryState = "Pending" | "Cancelled" | "Delivered";
 
-const OrdersDashboard: React.FC = () => {
-  const [data, setData] = useState<OrderWithDetails[]>([]);
+type OrderWithUser = Order & { user?: User };
+
+const STATUS_STYLES: Record<string, string> = {
+  Pending: "border border-amber-400 text-amber-700 bg-amber-50",
+  Delivered: "border border-green-500 text-green-700 bg-green-50",
+  Cancelled: "border border-gray-300 text-gray-500 bg-white",
+};
+
+const PER_PAGE = 10;
+
+export default function OrdersPage() {
+  const router = useRouter();
+  const [orders, setOrders] = useState<OrderWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-
-      // 1. Fetch from your services
-      const ordersRes = await getOrders();
-      const usersRes = await getUsers();
-
-      // 2. DEBUG LOGS - Check your F12 Console for these!
-      console.log("Service Orders Output:", ordersRes);
-      console.log("Service Users Output:", usersRes);
-
-      /**
-       * 3. FAIL-SAFE EXTRACTION
-       * If your service returns the whole 'data' object instead of 'data.orders',
-       * this logic will find the array regardless.
-       */
-      const extractArray = (res: any, key: string) => {
-        if (Array.isArray(res)) return res;
-        if (res && Array.isArray(res[key])) return res[key];
-        if (res && Array.isArray(res.data)) return res.data;
-        return [];
-      };
-
-      const ordersArray = extractArray(ordersRes, "orders");
-      const usersArray = extractArray(usersRes, "users");
-
-      // 4. MERGE LOGIC
-      const merged = ordersArray.map((order: Order) => ({
-        ...order,
-        // Match userId to user.id (Converting to String to handle "1" vs 1)
-        user: usersArray.find(
-          (u: User) => String(u.id) === String(order.userId),
-        ),
-      }));
-
-      setData(merged);
-    } catch (err) {
-      console.error("Dashboard Load Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [openStatusMenu, setOpenStatusMenu] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    loadData();
+    const load = async () => {
+      try {
+        const [ordersData, usersData] = await Promise.all([
+          getOrders(),
+          getUsers(),
+        ]);
+
+        // Add a safety check here
+        const safeOrders = Array.isArray(ordersData) ? ordersData : [];
+        const safeUsers = Array.isArray(usersData) ? usersData : [];
+
+        const merged: OrderWithUser[] = safeOrders.map((order) => ({
+          ...order,
+          user: safeUsers.find((u) => u.id === order.userId),
+        }));
+
+        setOrders(merged);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
+
+  const totalPages = Math.ceil(orders.length / PER_PAGE);
+  const slice = orders.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const sliceIds = slice.map((o) => o.id);
+    const allSelected = sliceIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      sliceIds.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
+      return next;
+    });
+  };
+
+  const setStatus = async (id: number, status: DeliveryState) => {
+    try {
+      await fetch(`http://localhost:3000/orders/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      setOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status } : o)),
+      );
+    } catch (err) {
+      console.error(err);
+    }
+    setOpenStatusMenu(null);
+  };
+
+  const getPaginationPages = (): (number | "...")[] => {
+    const pages: (number | "...")[] = [];
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
+        pages.push(p);
+      } else if (pages[pages.length - 1] !== "...") {
+        pages.push("...");
+      }
+    }
+    return pages;
+  };
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#F9FAFB]">
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 text-gray-300 animate-spin" />
-          <span className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">
-            Synchronizing Database
-          </span>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-slate-100">
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] p-10 font-sans text-[#111827]">
+    <div
+      className="p-6 min-h-screen bg-slate-100 font-mono"
+      onClick={() => setOpenStatusMenu(null)}
+    >
       {/* Header */}
-      <header className="flex justify-between items-end mb-8">
+      <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h2 className="text-3xl font-black tracking-tighter uppercase">
-            Orders
-          </h2>
-          <p className="text-gray-400 font-bold text-[10px] mt-1 uppercase tracking-widest">
-            {data.length} Records currently live
-          </p>
+          <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{orders.length} items</p>
         </div>
-
-        <div className="flex gap-3">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Search customers..."
-              className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs w-64 focus:ring-2 focus:ring-black/5 outline-none transition-all shadow-sm"
-            />
-          </div>
-          <button
-            onClick={loadData}
-            className="bg-white border border-gray-200 px-4 py-2 rounded-xl font-black text-[10px] hover:bg-gray-50 transition-all shadow-sm uppercase tracking-widest"
-          >
-            Force Refresh
+        <div className="flex items-center gap-2 flex-wrap">
+          <button className="flex items-center gap-2 text-sm text-gray-500 border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 transition-colors">
+            <Calendar size={14} />
+            13 June 2023 – 14 July 2023
+          </button>
+          <button className="text-sm text-gray-400 border border-gray-200 rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors">
+            Change delivery state
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* Main Table */}
-      <div className="bg-white rounded-[2rem] border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-left border-collapse">
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[#F9FAFB] border-b border-gray-200 text-[#9CA3AF] text-[9px] font-black uppercase tracking-[0.2em]">
-              <th className="p-5 w-12">
+            <tr className="border-b border-gray-100">
+              <th className="px-4 py-3 w-10">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 accent-black"
+                  className="rounded border-gray-300 cursor-pointer"
+                  checked={
+                    slice.length > 0 &&
+                    slice.every((o) => selectedIds.has(o.id))
+                  }
+                  onChange={toggleSelectAll}
                 />
               </th>
-              <th className="p-5 w-16">ID</th>
-              <th className="p-5">Customer Profile</th>
-              <th className="p-5">Items</th>
-              <th className="p-5">Created At</th>
-              <th className="p-5">Total Price</th>
-              <th className="p-5">Delivery Address</th>
-              <th className="p-5 text-center">State</th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal w-10">
+                №
+              </th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal">
+                Customer
+              </th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal">
+                Food
+              </th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal">
+                Date <ChevronDown size={12} className="inline" />
+              </th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal">
+                Total
+              </th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal">
+                Delivery Address
+              </th>
+              <th className="px-3 py-3 text-left text-gray-400 font-normal">
+                Delivery state <ChevronDown size={12} className="inline" />
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {data.length === 0 ? (
+          <tbody>
+            {slice.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-32 text-center">
-                  <div className="flex flex-col items-center gap-4 opacity-30">
-                    <AlertCircle size={40} />
-                    <div className="space-y-1">
-                      <p className="font-black text-xs uppercase tracking-widest">
-                        Zero Orders Found
-                      </p>
-                      <p className="text-[10px] italic">
-                        Check: http://localhost:3000/orders
-                      </p>
-                    </div>
-                  </div>
+                <td
+                  colSpan={8}
+                  className="text-center py-16 text-gray-400 text-sm"
+                >
+                  No orders found
                 </td>
               </tr>
             ) : (
-              data.map((order) => (
-                <React.Fragment key={order.id}>
-                  <tr className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="p-5">
+              slice.map((order) => (
+                <div key={order.id}>
+                  <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
                       <input
                         type="checkbox"
-                        className="rounded border-gray-300 accent-black"
+                        className="rounded border-gray-300 cursor-pointer"
+                        checked={selectedIds.has(order.id)}
+                        onChange={() => toggleSelect(order.id)}
                       />
                     </td>
-                    <td className="p-5 font-black text-gray-300">
-                      #{order.id}
+                    <td className="px-3 py-3 text-gray-400">{order.id}</td>
+                    <td className="px-3 py-3 text-gray-700">
+                      {order.user?.email ?? `User #${order.userId}`}
                     </td>
-                    <td className="p-5">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-gray-800 text-sm tracking-tight">
-                          {order.user?.email || "Ghost User"}
-                        </span>
-                        <span className="text-[9px] text-gray-400 font-black uppercase tracking-tighter">
-                          UID: {order.userId}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-5">
+                    <td className="px-3 py-3">
                       <button
+                        className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors"
                         onClick={() =>
                           setExpandedRow(
                             expandedRow === order.id ? null : order.id,
                           )
                         }
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black border transition-all ${
-                          expandedRow === order.id
-                            ? "bg-black text-white border-black shadow-md"
-                            : "bg-white text-gray-600 border-gray-100 hover:border-gray-300"
-                        }`}
                       >
-                        DETAILS{" "}
+                        <span>2 foods</span>
                         <ChevronDown
-                          size={12}
-                          className={
+                          size={14}
+                          className={`transition-transform duration-200 ${
                             expandedRow === order.id ? "rotate-180" : ""
-                          }
+                          }`}
                         />
                       </button>
                     </td>
-                    <td className="p-5 text-gray-400 font-bold text-[10px] uppercase">
-                      {new Date(order.createdAt).toLocaleDateString("en-GB")}
+                    <td className="px-3 py-3 text-gray-500">
+                      {new Date(order.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="p-5 font-black text-gray-900 text-base">
+                    <td className="px-3 py-3 font-medium text-gray-800">
                       ${Number(order.totalPrice).toFixed(2)}
                     </td>
-                    <td className="p-5 text-gray-400 text-[10px] max-w-[180px] truncate italic font-medium leading-relaxed">
-                      {order.user?.address || "No Address Found"}
+                    <td className="px-3 py-3 text-gray-400 max-w-[180px] truncate text-xs">
+                      {order.user?.address ?? "—"}
                     </td>
-                    <td className="p-5">
-                      <StatusBadge status={order.status} />
+                    <td className="px-3 py-3">
+                      <div
+                        className="relative"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${
+                            STATUS_STYLES[order.status] ??
+                            STATUS_STYLES["Cancelled"]
+                          }`}
+                          onClick={() =>
+                            setOpenStatusMenu(
+                              openStatusMenu === order.id ? null : order.id,
+                            )
+                          }
+                        >
+                          {order.status}
+                          <ChevronDown size={12} />
+                        </button>
+                        {openStatusMenu === order.id && (
+                          <div className="absolute top-full mt-1 left-0 z-50 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden min-w-[130px]">
+                            {(
+                              [
+                                "Pending",
+                                "Delivered",
+                                "Cancelled",
+                              ] as DeliveryState[]
+                            ).map((s) => (
+                              <button
+                                key={s}
+                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                onClick={() => setStatus(order.id, s)}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
 
-                  {/* Yellow Detail Highlight */}
+                  {/* Expanded food items row */}
                   {expandedRow === order.id && (
-                    <tr>
-                      <td colSpan={8} className="p-0 bg-gray-50/30">
-                        <div className="mx-6 mb-6 p-6 border-2 border-[#FBBF24] rounded-2xl bg-white shadow-xl animate-in fade-in slide-in-from-top-1">
-                          <div className="flex justify-between items-center mb-4 border-b border-gray-50 pb-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                              Order Contents
-                            </h4>
-                            <MoreVertical size={14} className="text-gray-300" />
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-[9px] text-gray-300 font-black border border-gray-100 uppercase">
-                              Img
+                    <tr
+                      key={`${order.id}-expanded`}
+                      className="border-b border-gray-100 bg-gray-50"
+                    >
+                      <td colSpan={2} />
+                      <td colSpan={6} className="px-3 py-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 w-fit min-w-[220px]">
+                            <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
+                              🍽
                             </div>
-                            <div>
-                              <p className="font-black text-gray-800 text-xs italic underline decoration-[#FBBF24]">
-                                Food data linking needed
-                              </p>
-                              <p className="text-[9px] text-gray-400 font-bold mt-0.5 uppercase tracking-tighter">
-                                Order Ref: {order.id}
-                              </p>
-                            </div>
-                            <div className="ml-auto text-xl font-black text-gray-900">
+                            <span className="text-sm text-gray-700">
+                              Food item
+                            </span>
+                            <span className="ml-auto text-xs text-gray-400">
                               x 1
-                            </div>
+                            </span>
                           </div>
                         </div>
                       </td>
                     </tr>
                   )}
-                </React.Fragment>
+                </div>
               ))
             )}
           </tbody>
         </table>
 
-        {/* Footer */}
-        <div className="p-6 flex justify-between items-center border-t border-gray-100 bg-[#F9FAFB]">
-          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic">
-            NomNom Delivery Admin
-          </span>
-          <div className="flex items-center gap-2">
-            <button className="p-2 text-gray-400 hover:text-black transition-colors">
-              <ChevronLeft size={18} />
-            </button>
-            <button className="w-8 h-8 rounded-lg bg-black text-white text-[10px] font-black shadow-lg">
-              1
-            </button>
-            <button className="p-2 text-gray-400 hover:text-black transition-colors">
-              <ChevronRight size={18} />
-            </button>
-          </div>
+        {/* Pagination */}
+        <div className="flex items-center justify-center gap-1 px-4 py-3 border-t border-gray-100">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          {getPaginationPages().map((p, i) =>
+            p === "..." ? (
+              <span
+                key={`dots-${i}`}
+                className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm"
+              >
+                ...
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => setPage(p as number)}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${
+                  page === p
+                    ? "bg-gray-900 text-white"
+                    : "border border-gray-200 text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages || totalPages === 0}
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={14} />
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const s = status ? status.toLowerCase() : "pending";
-  const styles: Record<string, string> = {
-    pending: "text-rose-500 border-rose-100 bg-rose-50/50",
-    delivered: "text-emerald-600 border-emerald-100 bg-green-50/50",
-    cancelled: "text-slate-400 border-slate-200 bg-slate-50",
-  };
-  return (
-    <div
-      className={`flex items-center justify-between px-3 py-1.5 rounded-full border text-[9px] font-black w-[105px] mx-auto shadow-sm ${styles[s] || styles.pending}`}
-    >
-      {s.toUpperCase()}
-      <ChevronDown size={12} className="opacity-40" />
-    </div>
-  );
-};
-
-export default OrdersDashboard;
+}

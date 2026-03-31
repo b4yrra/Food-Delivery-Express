@@ -5,8 +5,7 @@ type GetUsers = {
 };
 
 export const getUsers = async () => {
-  const response = await fetch("http://localhost:3000/users");
-  const data: GetUsers = await response.json();
-
-  return data.users;
+  const res = await fetch("http://localhost:3000/users");
+  if (!res.ok) return [];
+  return res.json();
 };
