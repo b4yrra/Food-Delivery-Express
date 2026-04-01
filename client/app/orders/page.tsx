@@ -1,15 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Fragment } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { getOrders } from "@/lib/services/get-orders";
 import { getUsers } from "@/lib/services/get-users";
 import { Order, User } from "@/lib/types";
-import { useRouter } from "next/navigation";
 
 type DeliveryState = "Pending" | "Cancelled" | "Delivered";
 
-type OrderWithUser = Order & { user?: User };
+type OrderItem = {
+  id: number;
+  quantity: number;
+  foodId: number;
+  foodOrderId: number;
+  food: {
+    id: number;
+    name: string;
+    price: string;
+    img: string;
+  };
+};
+
+type OrderWithUser = Order & {
+  user?: User;
+  foodOrderItems?: OrderItem[];
+};
 
 const STATUS_STYLES: Record<string, string> = {
   Pending: "border border-amber-400 text-amber-700 bg-amber-50",
@@ -20,7 +36,6 @@ const STATUS_STYLES: Record<string, string> = {
 const PER_PAGE = 10;
 
 export default function OrdersPage() {
-  const router = useRouter();
   const [orders, setOrders] = useState<OrderWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -36,16 +51,32 @@ export default function OrdersPage() {
           getUsers(),
         ]);
 
-        // Add a safety check here
         const safeOrders = Array.isArray(ordersData) ? ordersData : [];
         const safeUsers = Array.isArray(usersData) ? usersData : [];
 
-        const merged: OrderWithUser[] = safeOrders.map((order) => ({
-          ...order,
-          user: safeUsers.find((u) => u.id === order.userId),
-        }));
+        // Fetch each order with food items
+        const ordersWithItems = await Promise.all(
+          safeOrders.map(async (order) => {
+            try {
+              const res = await fetch(
+                `http://localhost:3000/orders/${order.id}`,
+              );
+              const data = await res.json();
+              return {
+                ...data.order,
+                user: safeUsers.find((u) => u.id === order.userId),
+              };
+            } catch {
+              return {
+                ...order,
+                user: safeUsers.find((u) => u.id === order.userId),
+                foodOrderItems: [],
+              };
+            }
+          }),
+        );
 
-        setOrders(merged);
+        setOrders(ordersWithItems);
       } catch (err) {
         console.error(err);
       } finally {
@@ -185,7 +216,7 @@ export default function OrdersPage() {
               </tr>
             ) : (
               slice.map((order) => (
-                <div key={order.id}>
+                <Fragment key={order.id}>
                   <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <input
@@ -208,7 +239,10 @@ export default function OrdersPage() {
                           )
                         }
                       >
-                        <span>2 foods</span>
+                        <span>
+                          {order.foodOrderItems?.length ?? 0} food
+                          {(order.foodOrderItems?.length ?? 0) !== 1 ? "s" : ""}
+                        </span>
                         <ChevronDown
                           size={14}
                           className={`transition-transform duration-200 ${
@@ -270,29 +304,49 @@ export default function OrdersPage() {
 
                   {/* Expanded food items row */}
                   {expandedRow === order.id && (
-                    <tr
-                      key={`${order.id}-expanded`}
-                      className="border-b border-gray-100 bg-gray-50"
-                    >
+                    <tr className="border-b border-gray-100 bg-gray-50">
                       <td colSpan={2} />
-                      <td colSpan={6} className="px-3 py-2">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 w-fit min-w-[220px]">
-                            <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
-                              🍽
-                            </div>
-                            <span className="text-sm text-gray-700">
-                              Food item
-                            </span>
-                            <span className="ml-auto text-xs text-gray-400">
-                              x 1
-                            </span>
-                          </div>
+                      <td colSpan={6} className="px-3 py-3">
+                        <div className="flex flex-col gap-2">
+                          {order.foodOrderItems &&
+                          order.foodOrderItems.length > 0 ? (
+                            order.foodOrderItems.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 w-fit min-w-[280px]"
+                              >
+                                {item.food?.img ? (
+                                  <img
+                                    src={item.food.img}
+                                    alt={item.food.name}
+                                    className="w-8 h-8 rounded object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
+                                    🍽
+                                  </div>
+                                )}
+                                <span className="text-sm text-gray-700">
+                                  {item.food?.name ?? `Food #${item.foodId}`}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  ${Number(item.food?.price ?? 0).toFixed(2)}
+                                </span>
+                                <span className="ml-auto text-xs text-gray-400">
+                                  x{item.quantity}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-gray-400">
+                              No food items found
+                            </p>
+                          )}
                         </div>
                       </td>
                     </tr>
                   )}
-                </div>
+                </Fragment>
               ))
             )}
           </tbody>

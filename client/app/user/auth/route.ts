@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
 export type SignInResponse = {
   secretToken: string;
 };
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const credentials = await request.json();
   const cookieStore = await cookies();
 
@@ -18,5 +19,6 @@ export async function POST(request: Request) {
 
   const data = (await response.json()) as SignInResponse;
   cookieStore.set("token", data.secretToken);
-  return new Response("OK");
+
+  return NextResponse.json({ success: true });
 }

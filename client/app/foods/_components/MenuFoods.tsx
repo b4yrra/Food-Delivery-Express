@@ -12,7 +12,6 @@ import { UpdateCategory } from "./EditCategory";
 type FoodProps = {
   foods: Food[];
   categories: Category[];
-  category: Category;
   selectedId: number | null;
 };
 
