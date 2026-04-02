@@ -10,7 +10,7 @@ import { me } from "../controller/users/me";
 
 const router = Router();
 
-router.get("/", authMiddleware, adminMiddleware, getUsers);
+router.get("/", getUsers);
 router.get("/:id", getUserById);
 router.post("/", addUser);
 router.put("/:id", updateUser);

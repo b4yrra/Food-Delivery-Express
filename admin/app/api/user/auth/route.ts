@@ -17,6 +17,14 @@ export async function POST(request: NextRequest) {
     body: JSON.stringify(credentials),
   });
 
+  if (!response.ok) {
+    const error = await response.json();
+    return NextResponse.json(
+      { message: error.message ?? "Invalid credentials" },
+      { status: response.status },
+    );
+  }
+
   const data = (await response.json()) as SignInResponse;
   cookieStore.set("token", data.secretToken);
 

@@ -11,7 +11,9 @@ const validateEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorInfo, setErrorInfo] = useState<{ email?: string }>({});
+  const [errorInfo, setErrorInfo] = useState<{ email?: string; auth?: string }>(
+    {},
+  );
   const router = useRouter();
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,20 +21,31 @@ export const SignIn = () => {
     setEmail(value);
 
     if (value === "") {
-      setErrorInfo({ email: "Мэйл хаягаа оруулна уу" });
+      setErrorInfo((prev) => ({ ...prev, email: "Мэйл хаягаа оруулна уу" }));
     } else if (!validateEmail.test(value)) {
-      setErrorInfo({ email: "Зөв мэйл хаяг оруулна уу" });
+      setErrorInfo((prev) => ({ ...prev, email: "Зөв мэйл хаяг оруулна уу" }));
     } else {
-      setErrorInfo({ email: "" });
+      setErrorInfo((prev) => ({ ...prev, email: "" }));
     }
   };
 
   const onSubmit = async () => {
+    setErrorInfo((prev) => ({ ...prev, auth: "" }));
     try {
-      await signIn({ email, password });
-      router.push("/foods");
+      const res = await signIn({ email, password });
+      if (res.success) {
+        router.push("/foods");
+      } else {
+        setErrorInfo((prev) => ({
+          ...prev,
+          auth: res.message ?? "Нэвтрэх мэдээлэл буруу байна",
+        }));
+      }
     } catch (err) {
-      console.log(err);
+      setErrorInfo((prev) => ({
+        ...prev,
+        auth: "Нэвтрэх мэдээлэл буруу байна",
+      }));
     }
   };
 
@@ -44,6 +57,9 @@ export const SignIn = () => {
           Log in to enjoy your favorite dishes.
         </p>
       </div>
+      {errorInfo.auth && (
+        <p className="text-red-500 text-xs">{errorInfo.auth}</p>
+      )}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <Input

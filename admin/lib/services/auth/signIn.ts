@@ -3,10 +3,6 @@ type Credentials = {
   password: string;
 };
 
-export type SignInResponse = {
-  secretToken: string;
-};
-
 export const signIn = async (credentials: Credentials) => {
   const response = await fetch("/api/user/auth", {
     method: "POST",
@@ -16,6 +12,6 @@ export const signIn = async (credentials: Credentials) => {
     body: JSON.stringify(credentials),
   });
 
-  const data = (await response.json()) as SignInResponse;
+  const data = await response.json();
   return data;
 };

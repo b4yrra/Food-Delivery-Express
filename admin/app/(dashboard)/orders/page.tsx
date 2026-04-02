@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Fragment } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Calendar,
+} from "lucide-react";
 import { getOrders } from "@/lib/services/get-orders";
 import { getUsers } from "@/lib/services/get-users";
 import { Order, User } from "@/lib/types";
@@ -28,8 +34,8 @@ type OrderWithUser = Order & {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  Pending: "border border-amber-400 text-amber-700 bg-amber-50",
-  Delivered: "border border-green-500 text-green-700 bg-green-50",
+  Pending: "border border-red-400 text-red-500 bg-white",
+  Delivered: "border border-green-500 text-green-600 bg-white",
   Cancelled: "border border-gray-300 text-gray-500 bg-white",
 };
 
@@ -37,11 +43,17 @@ const PER_PAGE = 10;
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderWithUser[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<OrderWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [openStatusMenu, setOpenStatusMenu] = useState<number | null>(null);
+  const [openBulkMenu, setOpenBulkMenu] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -54,7 +66,6 @@ export default function OrdersPage() {
         const safeOrders = Array.isArray(ordersData) ? ordersData : [];
         const safeUsers = Array.isArray(usersData) ? usersData : [];
 
-        // Fetch each order with food items
         const ordersWithItems = await Promise.all(
           safeOrders.map(async (order) => {
             try {
@@ -64,12 +75,12 @@ export default function OrdersPage() {
               const data = await res.json();
               return {
                 ...data.order,
-                user: safeUsers.find((u) => u.id === order.userId),
+                user: safeUsers.find((u: User) => u.id === order.userId),
               };
             } catch {
               return {
                 ...order,
-                user: safeUsers.find((u) => u.id === order.userId),
+                user: safeUsers.find((u: User) => u.id === order.userId),
                 foodOrderItems: [],
               };
             }
@@ -77,6 +88,7 @@ export default function OrdersPage() {
         );
 
         setOrders(ordersWithItems);
+        setFilteredOrders(ordersWithItems);
       } catch (err) {
         console.error(err);
       } finally {
@@ -86,8 +98,26 @@ export default function OrdersPage() {
     load();
   }, []);
 
-  const totalPages = Math.ceil(orders.length / PER_PAGE);
-  const slice = orders.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  // Apply date filter
+  useEffect(() => {
+    let result = orders;
+    if (dateFrom) {
+      result = result.filter(
+        (o) => new Date(o.createdAt) >= new Date(dateFrom),
+      );
+    }
+    if (dateTo) {
+      // include the full dateTo day
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((o) => new Date(o.createdAt) <= to);
+    }
+    setFilteredOrders(result);
+    setPage(1);
+  }, [dateFrom, dateTo, orders]);
+
+  const totalPages = Math.ceil(filteredOrders.length / PER_PAGE);
+  const slice = filteredOrders.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -123,6 +153,50 @@ export default function OrdersPage() {
     setOpenStatusMenu(null);
   };
 
+  // Bulk status change for all selected orders
+  const setBulkStatus = async (status: DeliveryState) => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    setOpenBulkMenu(false);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`http://localhost:3000/orders/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          }),
+        ),
+      );
+      setOrders((prev) =>
+        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status } : o)),
+      );
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error(err);
+    }
+    setBulkLoading(false);
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom("");
+    setDateTo("");
+    setShowDatePicker(false);
+  };
+
+  const formatDateRange = () => {
+    if (!dateFrom && !dateTo) return "Select date range";
+    const fmt = (d: string) =>
+      d
+        ? new Date(d).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "...";
+    return `${fmt(dateFrom)} – ${fmt(dateTo)}`;
+  };
+
   const getPaginationPages = (): (number | "...")[] => {
     const pages: (number | "...")[] = [];
     for (let p = 1; p <= totalPages; p++) {
@@ -146,22 +220,112 @@ export default function OrdersPage() {
   return (
     <div
       className="p-6 min-h-screen bg-slate-100 font-mono"
-      onClick={() => setOpenStatusMenu(null)}
+      onClick={() => {
+        setOpenStatusMenu(null);
+        setOpenBulkMenu(false);
+        setShowDatePicker(false);
+      }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{orders.length} items</p>
+          <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {filteredOrders.length} items
+            {selectedIds.size > 0 && (
+              <span className="ml-2 text-gray-500">
+                · {selectedIds.size} selected
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button className="flex items-center gap-2 text-sm text-gray-500 border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 transition-colors">
-            <Calendar size={14} />
-            13 June 2023 – 14 July 2023
-          </button>
-          <button className="text-sm text-gray-400 border border-gray-200 rounded-lg px-4 py-2 bg-white hover:bg-gray-50 transition-colors">
-            Change delivery state
-          </button>
+          {/* Date range picker */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`flex items-center gap-2 text-sm border rounded-lg px-3 py-2 bg-white hover:bg-gray-50 transition-colors ${
+                dateFrom || dateTo
+                  ? "border-gray-400 text-gray-700"
+                  : "border-gray-200 text-gray-500"
+              }`}
+            >
+              <Calendar size={14} />
+              {formatDateRange()}
+              {(dateFrom || dateTo) && (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearDateFilter();
+                  }}
+                  className="ml-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  ✕
+                </span>
+              )}
+            </button>
+            {showDatePicker && (
+              <div className="absolute top-full mt-1 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 flex flex-col gap-3 min-w-[260px]">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-gray-400">From</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-gray-400"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-gray-400">To</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-gray-400"
+                  />
+                </div>
+                <button
+                  onClick={clearDateFilter}
+                  className="text-xs text-gray-400 hover:text-gray-600 text-left"
+                >
+                  Clear filter
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Bulk change delivery state */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() =>
+                selectedIds.size > 0 && setOpenBulkMenu(!openBulkMenu)
+              }
+              disabled={selectedIds.size === 0 || bulkLoading}
+              className={`text-sm border rounded-lg px-4 py-2 transition-colors ${
+                selectedIds.size > 0
+                  ? "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                  : "border-gray-200 text-gray-300 bg-white cursor-not-allowed"
+              }`}
+            >
+              {bulkLoading ? "Updating..." : "Change delivery state"}
+            </button>
+            {openBulkMenu && (
+              <div className="absolute top-full mt-1 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden min-w-[140px]">
+                {(["Pending", "Delivered", "Cancelled"] as DeliveryState[]).map(
+                  (s) => (
+                    <button
+                      key={s}
+                      className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setBulkStatus(s)}
+                    >
+                      {s}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -191,7 +355,13 @@ export default function OrdersPage() {
                 Food
               </th>
               <th className="px-3 py-3 text-left text-gray-400 font-normal">
-                Date <ChevronDown size={12} className="inline" />
+                <span className="flex items-center gap-1">
+                  Date
+                  <span className="flex flex-col leading-none">
+                    <ChevronUp size={10} />
+                    <ChevronDown size={10} />
+                  </span>
+                </span>
               </th>
               <th className="px-3 py-3 text-left text-gray-400 font-normal">
                 Total
@@ -200,7 +370,13 @@ export default function OrdersPage() {
                 Delivery Address
               </th>
               <th className="px-3 py-3 text-left text-gray-400 font-normal">
-                Delivery state <ChevronDown size={12} className="inline" />
+                <span className="flex items-center gap-1">
+                  Delivery state
+                  <span className="flex flex-col leading-none">
+                    <ChevronUp size={10} />
+                    <ChevronDown size={10} />
+                  </span>
+                </span>
               </th>
             </tr>
           </thead>
@@ -217,7 +393,11 @@ export default function OrdersPage() {
             ) : (
               slice.map((order) => (
                 <Fragment key={order.id}>
-                  <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr
+                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                      expandedRow === order.id ? "bg-gray-50" : ""
+                    }`}
+                  >
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -232,7 +412,7 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-3 py-3">
                       <button
-                        className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="flex items-center gap-1.5 text-gray-600 hover:text-gray-800 transition-colors"
                         onClick={() =>
                           setExpandedRow(
                             expandedRow === order.id ? null : order.id,
@@ -257,7 +437,7 @@ export default function OrdersPage() {
                     <td className="px-3 py-3 font-medium text-gray-800">
                       ${Number(order.totalPrice).toFixed(2)}
                     </td>
-                    <td className="px-3 py-3 text-gray-400 max-w-[180px] truncate text-xs">
+                    <td className="px-3 py-3 text-gray-400 max-w-[200px] truncate text-xs">
                       {order.user?.address ?? "—"}
                     </td>
                     <td className="px-3 py-3">
@@ -266,7 +446,7 @@ export default function OrdersPage() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <button
-                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${
+                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium ${
                             STATUS_STYLES[order.status] ??
                             STATUS_STYLES["Cancelled"]
                           }`}
@@ -277,10 +457,13 @@ export default function OrdersPage() {
                           }
                         >
                           {order.status}
-                          <ChevronDown size={12} />
+                          <span className="flex flex-col leading-none">
+                            <ChevronUp size={9} />
+                            <ChevronDown size={9} />
+                          </span>
                         </button>
                         {openStatusMenu === order.id && (
-                          <div className="absolute top-full mt-1 left-0 z-50 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden min-w-[130px]">
+                          <div className="absolute top-full mt-1 left-0 z-50 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden min-w-[130px]">
                             {(
                               [
                                 "Pending",
@@ -302,50 +485,62 @@ export default function OrdersPage() {
                     </td>
                   </tr>
 
-                  {/* Expanded food items row */}
-                  {expandedRow === order.id && (
-                    <tr className="border-b border-gray-100 bg-gray-50">
-                      <td colSpan={2} />
-                      <td colSpan={6} className="px-3 py-3">
-                        <div className="flex flex-col gap-2">
-                          {order.foodOrderItems &&
-                          order.foodOrderItems.length > 0 ? (
-                            order.foodOrderItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-3 py-2 w-fit min-w-[280px]"
-                              >
-                                {item.food?.img ? (
-                                  <img
-                                    src={item.food.img}
-                                    alt={item.food.name}
-                                    className="w-8 h-8 rounded object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-300 text-xs">
-                                    🍽
-                                  </div>
-                                )}
-                                <span className="text-sm text-gray-700">
-                                  {item.food?.name ?? `Food #${item.foodId}`}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  ${Number(item.food?.price ?? 0).toFixed(2)}
-                                </span>
-                                <span className="ml-auto text-xs text-gray-400">
-                                  x{item.quantity}
-                                </span>
+                  {/* Expanded food item rows */}
+                  {expandedRow === order.id &&
+                    order.foodOrderItems &&
+                    order.foodOrderItems.length > 0 &&
+                    order.foodOrderItems.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-gray-100 bg-gray-50"
+                      >
+                        <td className="px-4 py-2" />
+                        <td className="px-3 py-2 text-gray-400">{order.id}</td>
+                        <td className="px-3 py-2 text-gray-500 text-xs">
+                          {order.user?.email ?? `User #${order.userId}`}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {item.food?.img ? (
+                              <img
+                                src={item.food.img}
+                                alt={item.food.name}
+                                className="w-8 h-8 rounded object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-gray-300 flex-shrink-0">
+                                🍽
                               </div>
-                            ))
-                          ) : (
-                            <p className="text-xs text-gray-400">
-                              No food items found
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+                            )}
+                            <span className="text-xs text-gray-700 font-medium">
+                              {item.food?.name ?? `Food #${item.foodId}`}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-400 whitespace-nowrap">
+                              x {item.quantity}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-gray-400 text-xs">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-3 py-2 text-gray-600 text-xs font-medium">
+                          ${Number(item.food?.price ?? 0).toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2 text-gray-400 max-w-[200px] truncate text-xs">
+                          {order.user?.address ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`text-xs px-3 py-1.5 rounded-full font-medium ${
+                              STATUS_STYLES[order.status] ??
+                              STATUS_STYLES["Cancelled"]
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                 </Fragment>
               ))
             )}
