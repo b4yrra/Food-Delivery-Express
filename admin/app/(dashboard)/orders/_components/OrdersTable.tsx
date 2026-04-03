@@ -62,11 +62,14 @@ export const OrdersTable = ({ initialOrders }: Props) => {
 
   const setStatus = async (id: number, status: DeliveryState) => {
     try {
-      const res = await fetch(`http://localhost:3000/orders/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+      const res = await fetch(
+        `https://food-delivery-express.onrender.com/orders/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        },
+      );
 
       if (!res.ok) {
         console.error("Status update failed:", res.status);
@@ -90,7 +93,7 @@ export const OrdersTable = ({ initialOrders }: Props) => {
     try {
       await Promise.all(
         Array.from(selectedIds).map((id) =>
-          fetch(`http://localhost:3000/orders/${id}`, {
+          fetch(`https://food-delivery-express.onrender.com/orders/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status }),

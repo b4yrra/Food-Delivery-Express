@@ -6,12 +6,15 @@ export async function GET() {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
-    const res = await fetch("http://localhost:3000/users", {
-      headers: {
-        Authorization: `Bearer ${token ?? ""}`,
+    const res = await fetch(
+      "https://food-delivery-express.onrender.com/users",
+      {
+        headers: {
+          Authorization: `Bearer ${token ?? ""}`,
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    });
+    );
 
     if (!res.ok) {
       console.error("Users fetch failed:", res.status);

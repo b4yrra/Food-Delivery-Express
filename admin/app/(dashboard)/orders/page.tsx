@@ -3,9 +3,12 @@ import { OrderWithUser } from "./_components/types";
 
 const getOrders = async (): Promise<OrderWithUser[]> => {
   try {
-    const res = await fetch("http://localhost:3000/orders", {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      "https://food-delivery-express.onrender.com/orders",
+      {
+        cache: "no-store",
+      },
+    );
 
     if (!res.ok) {
       console.error("Orders fetch failed:", res.status, res.statusText);

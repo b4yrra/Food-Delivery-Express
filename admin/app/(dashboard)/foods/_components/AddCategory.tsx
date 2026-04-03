@@ -31,7 +31,7 @@ export const AddCategory = () => {
     setLoading(true);
 
     try {
-      await fetch("http://localhost:3000/categories", {
+      await fetch("https://food-delivery-express.onrender.com/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

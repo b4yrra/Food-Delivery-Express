@@ -2,7 +2,7 @@ import { SignIn } from "./_components/SignIn";
 
 export default function Home() {
   return (
-    <div className="flex justify-around items-center h-full">
+    <div className="flex justify-around items-center h-screen">
       <div>
         <SignIn />
       </div>

@@ -5,7 +5,9 @@ type GetCategories = {
 };
 
 export const getCategories = async () => {
-  const response = await fetch("http://localhost:3000/categories");
+  const response = await fetch(
+    "https://food-delivery-express.onrender.com/categories",
+  );
   const data: GetCategories = await response.json();
 
   return data.categories;

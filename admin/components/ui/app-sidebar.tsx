@@ -41,14 +41,6 @@ export function AppSidebar() {
             Orders
           </Button>
         </Link>
-        <Link href="/settings">
-          <Button
-            className={`flex gap-3 text-[14px] w-full text-start cursor-pointer p-5 rounded-full ${pathname === "/settings" ? "bg-black" : "bg-transparent text-black"}`}
-          >
-            <Settings />
-            Settings
-          </Button>
-        </Link>
       </div>
     </Sidebar>
   );

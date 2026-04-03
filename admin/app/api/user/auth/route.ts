@@ -9,13 +9,16 @@ export async function POST(request: NextRequest) {
   const credentials = await request.json();
   const cookieStore = await cookies();
 
-  const response = await fetch("http://localhost:3000/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    "https://food-delivery-express.onrender.com/auth/login",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
     },
-    body: JSON.stringify(credentials),
-  });
+  );
 
   if (!response.ok) {
     const error = await response.json();

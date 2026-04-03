@@ -79,7 +79,7 @@ export function FoodAddDialog({
     setLoading(true);
 
     try {
-      await fetch("http://localhost:3000/foods", {
+      await fetch("https://food-delivery-express.onrender.com/foods", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(food),

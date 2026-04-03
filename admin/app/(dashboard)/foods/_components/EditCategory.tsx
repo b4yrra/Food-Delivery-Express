@@ -40,11 +40,14 @@ export const UpdateCategory = ({ category }: UpdateFoodProps) => {
   const onUpdate = async () => {
     setLoading(true);
     try {
-      await fetch(`http://localhost:3000/categories/${category.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categoryName: updatedCategory.name }),
-      });
+      await fetch(
+        `https://food-delivery-express.onrender.com/categories/${category.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categoryName: updatedCategory.name }),
+        },
+      );
       setOpen(false);
       router.refresh();
     } catch (err) {

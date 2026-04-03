@@ -32,9 +32,12 @@ export const MenuFoods = ({
     e.stopPropagation();
     setDeletingId(foodId);
     try {
-      await fetch(`http://localhost:3000/foods/${foodId}`, {
-        method: "DELETE",
-      });
+      await fetch(
+        `https://food-delivery-express.onrender.com/foods/${foodId}`,
+        {
+          method: "DELETE",
+        },
+      );
       router.refresh();
     } catch (err) {
       console.log(err);
@@ -51,9 +54,12 @@ export const MenuFoods = ({
     setDeleteCat(categoryId);
 
     try {
-      await fetch(`http://localhost:3000/categories/${categoryId}`, {
-        method: "DELETE",
-      });
+      await fetch(
+        `https://food-delivery-express.onrender.com/categories/${categoryId}`,
+        {
+          method: "DELETE",
+        },
+      );
       router.refresh();
     } catch (err) {
       console.log(err);
