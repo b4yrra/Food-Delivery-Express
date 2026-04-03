@@ -7,7 +7,7 @@ export async function GET() {
 
   const res = await fetch("http://localhost:3000/users", {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token ?? ""}`,
     },
   });
 

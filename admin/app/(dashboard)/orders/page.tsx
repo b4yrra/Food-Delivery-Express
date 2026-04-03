@@ -9,8 +9,15 @@ import {
   ChevronUp,
   Calendar,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getOrders } from "@/lib/services/get-orders";
-import { getUsers } from "@/lib/services/get-users";
 import { Order, User } from "@/lib/types";
 
 type DeliveryState = "Pending" | "Cancelled" | "Delivered";
@@ -46,7 +53,6 @@ export default function OrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<OrderWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [openStatusMenu, setOpenStatusMenu] = useState<number | null>(null);
   const [openBulkMenu, setOpenBulkMenu] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -58,13 +64,8 @@ export default function OrdersPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [ordersData, usersData] = await Promise.all([
-          getOrders(),
-          getUsers(),
-        ]);
-
+        const ordersData = await getOrders();
         const safeOrders = Array.isArray(ordersData) ? ordersData : [];
-        const safeUsers = Array.isArray(usersData) ? usersData : [];
 
         const ordersWithItems = await Promise.all(
           safeOrders.map(async (order) => {
@@ -73,16 +74,9 @@ export default function OrdersPage() {
                 `http://localhost:3000/orders/${order.id}`,
               );
               const data = await res.json();
-              return {
-                ...data.order,
-                user: safeUsers.find((u: User) => u.id === order.userId),
-              };
+              return data.order as OrderWithUser;
             } catch {
-              return {
-                ...order,
-                user: safeUsers.find((u: User) => u.id === order.userId),
-                foodOrderItems: [],
-              };
+              return { ...order, foodOrderItems: [] } as OrderWithUser;
             }
           }),
         );
@@ -98,7 +92,6 @@ export default function OrdersPage() {
     load();
   }, []);
 
-  // Apply date filter
   useEffect(() => {
     let result = orders;
     if (dateFrom) {
@@ -107,7 +100,6 @@ export default function OrdersPage() {
       );
     }
     if (dateTo) {
-      // include the full dateTo day
       const to = new Date(dateTo);
       to.setHours(23, 59, 59, 999);
       result = result.filter((o) => new Date(o.createdAt) <= to);
@@ -153,7 +145,6 @@ export default function OrdersPage() {
     setOpenStatusMenu(null);
   };
 
-  // Bulk status change for all selected orders
   const setBulkStatus = async (status: DeliveryState) => {
     if (selectedIds.size === 0) return;
     setBulkLoading(true);
@@ -393,11 +384,7 @@ export default function OrdersPage() {
             ) : (
               slice.map((order) => (
                 <Fragment key={order.id}>
-                  <tr
-                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                      expandedRow === order.id ? "bg-gray-50" : ""
-                    }`}
-                  >
+                  <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -410,27 +397,67 @@ export default function OrdersPage() {
                     <td className="px-3 py-3 text-gray-700">
                       {order.user?.email ?? `User #${order.userId}`}
                     </td>
+
+                    {/* Food dropdown */}
                     <td className="px-3 py-3">
-                      <button
-                        className="flex items-center gap-1.5 text-gray-600 hover:text-gray-800 transition-colors"
-                        onClick={() =>
-                          setExpandedRow(
-                            expandedRow === order.id ? null : order.id,
-                          )
-                        }
-                      >
-                        <span>
-                          {order.foodOrderItems?.length ?? 0} food
-                          {(order.foodOrderItems?.length ?? 0) !== 1 ? "s" : ""}
-                        </span>
-                        <ChevronDown
-                          size={14}
-                          className={`transition-transform duration-200 ${
-                            expandedRow === order.id ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-800 transition-colors">
+                            <span>
+                              {order.foodOrderItems?.length ?? 0} food
+                              {(order.foodOrderItems?.length ?? 0) !== 1
+                                ? "s"
+                                : ""}
+                            </span>
+                            <ChevronDown size={14} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="start"
+                          className="w-[280px] font-mono"
+                        >
+                          <DropdownMenuLabel className="text-xs text-gray-400 font-normal">
+                            Order #{order.id} items
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {order.foodOrderItems &&
+                          order.foodOrderItems.length > 0 ? (
+                            order.foodOrderItems.map((item) => (
+                              <DropdownMenuItem
+                                key={item.id}
+                                className="flex items-center gap-3 py-2 cursor-default focus:bg-gray-50"
+                              >
+                                {item.food?.img ? (
+                                  <img
+                                    src={item.food.img}
+                                    alt={item.food.name}
+                                    className="w-8 h-8 rounded object-cover flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm">
+                                    🍽
+                                  </div>
+                                )}
+                                <span className="text-sm text-gray-700 flex-1 truncate">
+                                  {item.food?.name ?? `Food #${item.foodId}`}
+                                </span>
+                                <span className="text-xs text-gray-400 flex-shrink-0">
+                                  ${Number(item.food?.price ?? 0).toFixed(2)}
+                                </span>
+                                <span className="text-xs text-gray-400 flex-shrink-0">
+                                  x{item.quantity}
+                                </span>
+                              </DropdownMenuItem>
+                            ))
+                          ) : (
+                            <DropdownMenuItem disabled>
+                              No items
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
+
                     <td className="px-3 py-3 text-gray-500">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
@@ -484,63 +511,6 @@ export default function OrdersPage() {
                       </div>
                     </td>
                   </tr>
-
-                  {/* Expanded food item rows */}
-                  {expandedRow === order.id &&
-                    order.foodOrderItems &&
-                    order.foodOrderItems.length > 0 &&
-                    order.foodOrderItems.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-gray-100 bg-gray-50"
-                      >
-                        <td className="px-4 py-2" />
-                        <td className="px-3 py-2 text-gray-400">{order.id}</td>
-                        <td className="px-3 py-2 text-gray-500 text-xs">
-                          {order.user?.email ?? `User #${order.userId}`}
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            {item.food?.img ? (
-                              <img
-                                src={item.food.img}
-                                alt={item.food.name}
-                                className="w-8 h-8 rounded object-cover flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-gray-300 flex-shrink-0">
-                                🍽
-                              </div>
-                            )}
-                            <span className="text-xs text-gray-700 font-medium">
-                              {item.food?.name ?? `Food #${item.foodId}`}
-                            </span>
-                            <span className="ml-2 text-xs text-gray-400 whitespace-nowrap">
-                              x {item.quantity}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-gray-400 text-xs">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-3 py-2 text-gray-600 text-xs font-medium">
-                          ${Number(item.food?.price ?? 0).toFixed(2)}
-                        </td>
-                        <td className="px-3 py-2 text-gray-400 max-w-[200px] truncate text-xs">
-                          {order.user?.address ?? "—"}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span
-                            className={`text-xs px-3 py-1.5 rounded-full font-medium ${
-                              STATUS_STYLES[order.status] ??
-                              STATUS_STYLES["Cancelled"]
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
                 </Fragment>
               ))
             )}

@@ -6,16 +6,11 @@ export const updateOrder = async (req: Request, res: Response) => {
   const { status } = req.body;
 
   try {
-    const food = prisma.foodOrder.update({
-      where: {
-        id: Number(id),
-      },
-      data: {
-        status,
-      },
+    const order = await prisma.foodOrder.update({
+      where: { id: Number(id) },
+      data: { status },
     });
-
-    res.json({ food });
+    res.json({ order });
   } catch (err) {
     console.log(err);
     res.status(400).json({ message: "invalid" });
