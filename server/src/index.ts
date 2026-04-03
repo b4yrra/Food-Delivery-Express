@@ -11,6 +11,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.get("/", (req, res) => {
+  res.send("Hello from Express on Vercel!");
+});
+
 app.use("/users", userRouter);
 app.use("/orders", orderRouter);
 app.use("/foods", foodRouter);
@@ -19,3 +23,5 @@ app.use("/auth", authRouter);
 app.use("/middleware", middleWareRouter);
 
 app.listen(3000, () => console.log("Server running on 3000"));
+
+module.exports = app;

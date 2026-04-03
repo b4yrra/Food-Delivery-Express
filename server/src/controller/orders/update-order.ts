@@ -3,7 +3,10 @@ import { prisma } from "../../lib/prisma";
 
 export const updateOrder = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { status } = req.body;
+  let { status } = req.body;
+
+  // Frontend sends "Cancelled" but DB enum is "Canceled"
+  if (status === "Cancelled") status = "Canceled";
 
   try {
     const order = await prisma.foodOrder.update({
