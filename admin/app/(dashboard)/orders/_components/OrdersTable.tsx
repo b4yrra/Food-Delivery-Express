@@ -61,12 +61,24 @@ export const OrdersTable = ({ initialOrders }: Props) => {
   };
 
   const setStatus = async (id: number, status: DeliveryState) => {
-    await fetch(`http://localhost:3000/orders/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    try {
+      const res = await fetch(`http://localhost:3000/orders/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) {
+        console.error("Status update failed:", res.status);
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status } : o)),
+      );
+    } catch (err) {
+      console.error("setStatus error:", err);
+    }
     setOpenStatusMenu(null);
   };
 
@@ -74,19 +86,26 @@ export const OrdersTable = ({ initialOrders }: Props) => {
     if (selectedIds.size === 0) return;
     setBulkLoading(true);
     setOpenBulkMenu(false);
-    await Promise.all(
-      Array.from(selectedIds).map((id) =>
-        fetch(`http://localhost:3000/orders/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        }),
-      ),
-    );
-    setOrders((prev) =>
-      prev.map((o) => (selectedIds.has(o.id) ? { ...o, status } : o)),
-    );
-    setSelectedIds(new Set());
+
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`http://localhost:3000/orders/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          }),
+        ),
+      );
+
+      setOrders((prev) =>
+        prev.map((o) => (selectedIds.has(o.id) ? { ...o, status } : o)),
+      );
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error("setBulkStatus error:", err);
+    }
+
     setBulkLoading(false);
   };
 
@@ -201,12 +220,12 @@ export const OrdersTable = ({ initialOrders }: Props) => {
             )}
           </tbody>
         </table>
-        <OrdersPagination
-          page={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-        />
       </div>
+      <OrdersPagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
     </div>
   );
 };

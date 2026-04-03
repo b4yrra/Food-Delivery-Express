@@ -18,13 +18,15 @@ export const StatusBadge = ({
   onToggle,
   onSelect,
 }: Props) => {
+  // Normalize "Canceled" (old DB value) → "Cancelled" for display
   const displayStatus = status === "Canceled" ? "Cancelled" : status;
+  const styleKey = STATUS_STYLES[status] ? status : "Cancelled";
 
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       <button
         className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium ${
-          STATUS_STYLES[status] ?? STATUS_STYLES["Canceled"]
+          STATUS_STYLES[styleKey]
         }`}
         onClick={onToggle}
       >

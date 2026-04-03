@@ -6,9 +6,20 @@ const getOrders = async (): Promise<OrderWithUser[]> => {
     const res = await fetch("http://localhost:3000/orders", {
       cache: "no-store",
     });
+
+    if (!res.ok) {
+      console.error("Orders fetch failed:", res.status, res.statusText);
+      return [];
+    }
+
     const data = await res.json();
+    console.log(
+      "Orders fetched:",
+      Array.isArray(data.order) ? data.order.length : "not array",
+    );
     return Array.isArray(data.order) ? data.order : [];
-  } catch {
+  } catch (err) {
+    console.error("Orders fetch error:", err);
     return [];
   }
 };
