@@ -15,9 +15,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Food, Category } from "@/lib/types";
 import { ChangeEventHandler, useState } from "react";
-import { LoaderCircle, Pencil, Image } from "lucide-react";
+import { LoaderCircle, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CategorySelector } from "./CategorySelector";
+import { CldUpload } from "./CldUpload";
 
 type UpdateFoodProps = {
   food: Food;
@@ -46,14 +47,21 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
     setUpdatedFood({ ...updatedFood, foodCategoryId });
   };
 
+  const onImageUpload = (url: string) => {
+    setUpdatedFood((prev) => ({ ...prev, img: url }));
+  };
+
   const onUpdate = async () => {
     setLoading(true);
     try {
-      await fetch(`http://localhost:3000/foods/${food.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedFood),
-      });
+      await fetch(
+        `https://food-delivery-express.onrender.com/foods/${food.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedFood),
+        },
+      );
       setOpen(false);
       router.refresh();
     } catch (err) {
@@ -62,8 +70,22 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
     setLoading(false);
   };
 
+  const handleOpenChange = (val: boolean) => {
+    setOpen(val);
+    if (!val) {
+      // Reset form back to original food data on close
+      setUpdatedFood({
+        name: food.name,
+        price: food.price,
+        foodCategoryId: food.foodCategoryId,
+        ingredients: food.ingredients,
+        img: food.img,
+      });
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
@@ -73,7 +95,7 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md font-mono w-[460px] h-[592px]">
+      <DialogContent className="sm:max-w-md font-mono w-[460px] h-[640px] overflow-y-auto">
         <DialogHeader className="flex flex-col gap-10">
           <DialogTitle>Update Dish</DialogTitle>
         </DialogHeader>
@@ -112,30 +134,17 @@ export const UpdateFood = ({ food, categories }: UpdateFoodProps) => {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label>Food image URL</Label>
-          <Input
-            type="text"
-            placeholder="Paste image URL..."
-            name="img"
-            value={updatedFood.img}
-            onChange={handleChange}
-          />
-          {updatedFood.img && (
-            <img
-              src={updatedFood.img}
-              alt="preview"
-              className="w-full h-40 object-cover rounded-lg"
-            />
-          )}
-        </div>
-
         <div className="flex items-center">
           <Label className="min-w-[120px]">Category</Label>
           <CategorySelector
             categories={categories}
             onSelect={onSelectCategory}
           />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>Food image</Label>
+          <CldUpload onUpload={onImageUpload} currentImage={updatedFood.img} />
         </div>
 
         <DialogFooter className="sm:justify-end bg-slate-100">

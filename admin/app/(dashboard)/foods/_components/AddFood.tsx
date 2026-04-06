@@ -18,6 +18,15 @@ import { CategorySelector } from "./CategorySelector";
 import { LoaderCircle, Plus, Image } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
+import { CldUpload } from "./CldUpload";
+
+type Food = {
+  name: string;
+  price: string;
+  foodCategoryId: any;
+  ingredients: string;
+  img: string;
+};
 
 type FoodAddDialogProps = {
   categories: Category[];
@@ -32,8 +41,14 @@ export function FoodAddDialog({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState({});
-  const [food, setFood] = useState({
+  const [error, setError] = useState<Food>({
+    name: "",
+    price: "",
+    foodCategoryId: defaultCategoryId ?? (null as number | null),
+    ingredients: "",
+    img: "",
+  });
+  const [food, setFood] = useState<Food>({
     name: "",
     price: "0",
     foodCategoryId: defaultCategoryId ?? (null as number | null),
@@ -172,24 +187,6 @@ export function FoodAddDialog({
           )}
         </div>
 
-        <div className={`flex flex-col gap-2 ${food.img ? "" : "mb-30"}`}>
-          <Label className="min-w-[120px]">Food image URL</Label>
-          <Input
-            type="text"
-            placeholder="Paste image URL..."
-            name="img"
-            onChange={handleChange}
-          />
-          {food.img && (
-            <img
-              src={food.img}
-              alt="preview"
-              className="w-full h-40 object-cover rounded-lg"
-            />
-          )}
-          {error.img && <p className="text-red-500 text-xs">{error.img}</p>}
-        </div>
-
         {!defaultCategoryId && (
           <div className="flex items-center">
             <Label className="min-w-[120px]">Category</Label>
@@ -199,6 +196,16 @@ export function FoodAddDialog({
             />
           </div>
         )}
+
+        <div className="flex flex-col gap-2">
+          <Label className="min-w-[120px]">Food image URL</Label>
+          <CldUpload
+            onUpload={(url) => {
+              setFood((prev) => ({ ...prev, img: url }));
+              setError((prev) => ({ ...prev, img: "" }));
+            }}
+          />
+        </div>
 
         <DialogFooter className="sm:justify-end items-center bg-slate-100">
           <DialogClose asChild>
@@ -214,3 +221,21 @@ export function FoodAddDialog({
     </Dialog>
   );
 }
+
+// <div className={`flex flex-col gap-2 ${food.img ? "" : "mb-30"}`}>
+//   <Label className="min-w-[120px]">Food image URL</Label>
+//   <Input
+//     type="text"
+//     placeholder="Paste image URL..."
+//     name="img"
+//     onChange={handleChange}
+//   />
+//   {food.img && (
+//     <img
+//       src={food.img}
+//       alt="preview"
+//       className="w-full h-40 object-cover rounded-lg"
+//     />
+//   )}
+//   {error.img && <p className="text-red-500 text-xs">{error.img}</p>}
+// </div>
