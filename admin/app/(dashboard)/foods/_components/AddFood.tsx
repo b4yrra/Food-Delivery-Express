@@ -50,7 +50,9 @@ export function FoodAddDialog({
     img: "",
   });
 
-  const handleChange: ChangeEventHandler<HTMLInputElement> = (event) => {
+  const handleChange: ChangeEventHandler<
+    HTMLInputElement | HTMLTextAreaElement
+  > = (event) => {
     setFood({ ...food, [event.target.name]: event.target.value });
     setError({ ...error, [event.target.name]: "" });
   };
