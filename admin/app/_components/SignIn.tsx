@@ -45,7 +45,7 @@ export const SignIn = () => {
         if (res.role === "admin") {
           router.push("/foods");
         } else {
-          window.location.href = "http://localhost:3000";
+          window.location.href = "food-delivery-client-side.vercel.app";
         }
       } else {
         let errorMessage = "Нэвтрэх мэдээлэл буруу байна";

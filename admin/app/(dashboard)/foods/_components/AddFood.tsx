@@ -41,13 +41,7 @@ export function FoodAddDialog({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState<Food>({
-    name: "",
-    price: "",
-    foodCategoryId: defaultCategoryId ?? (null as number | null),
-    ingredients: "",
-    img: "",
-  });
+  const [error, setError] = useState<Partial<Food>>({});
   const [food, setFood] = useState<Food>({
     name: "",
     price: "0",
@@ -58,11 +52,11 @@ export function FoodAddDialog({
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (event) => {
     setFood({ ...food, [event.target.name]: event.target.value });
-
     setError({ ...error, [event.target.name]: "" });
   };
+
   const handleError = () => {
-    const isValid = {};
+    const isValid: Partial<Food> = {};
 
     if (food.name === "") {
       isValid.name = "Enter Dish Name";
@@ -151,7 +145,6 @@ export function FoodAddDialog({
         <div className="flex justify-between gap-2">
           <div className="flex flex-col gap-2">
             <Label className="min-w-[120px]">Food name</Label>
-
             <Input
               type="text"
               placeholder="Type food name"
@@ -221,21 +214,3 @@ export function FoodAddDialog({
     </Dialog>
   );
 }
-
-// <div className={`flex flex-col gap-2 ${food.img ? "" : "mb-30"}`}>
-//   <Label className="min-w-[120px]">Food image URL</Label>
-//   <Input
-//     type="text"
-//     placeholder="Paste image URL..."
-//     name="img"
-//     onChange={handleChange}
-//   />
-//   {food.img && (
-//     <img
-//       src={food.img}
-//       alt="preview"
-//       className="w-full h-40 object-cover rounded-lg"
-//     />
-//   )}
-//   {error.img && <p className="text-red-500 text-xs">{error.img}</p>}
-// </div>
