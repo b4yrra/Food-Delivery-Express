@@ -42,20 +42,18 @@ export const SignIn = () => {
       const res = await signIn({ email, password });
 
       if (res.success) {
-        router.push("/foods");
+        if (res.role === "admin") {
+          router.push("/foods");
+        } else {
+          window.location.href = "http://localhost:3000";
+        }
       } else {
         let errorMessage = "Нэвтрэх мэдээлэл буруу байна";
-
-        if (res.message === "User not found") {
+        if (res.message === "User not found")
           errorMessage = "Хэрэглэгч олдсонгүй";
-        } else if (res.message === "Invalid password") {
+        else if (res.message === "Invalid password")
           errorMessage = "Нууц үг буруу байна";
-        }
-
-        setErrorInfo((prev) => ({
-          ...prev,
-          auth: errorMessage,
-        }));
+        setErrorInfo((prev) => ({ ...prev, auth: errorMessage }));
       }
     } catch (err) {
       setErrorInfo((prev) => ({

@@ -1,10 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-export type SignInResponse = {
-  secretToken: string;
-};
-
 export async function POST(request: NextRequest) {
   const credentials = await request.json();
   const cookieStore = await cookies();
@@ -13,9 +9,7 @@ export async function POST(request: NextRequest) {
     "https://food-delivery-express.onrender.com/auth/login",
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     },
   );
@@ -28,8 +22,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const data = (await response.json()) as SignInResponse;
+  const data = await response.json();
   cookieStore.set("token", data.secretToken);
 
-  return NextResponse.json({ success: true });
+  // Fetch user profile to get role
+  const meRes = await fetch(
+    "https://food-delivery-express.onrender.com/auth/me",
+    {
+      headers: { Authorization: `Bearer ${data.secretToken}` },
+    },
+  );
+
+  const user = meRes.ok ? await meRes.json() : null;
+
+  return NextResponse.json({ success: true, role: user?.role ?? "user" });
 }
