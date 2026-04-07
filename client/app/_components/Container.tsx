@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "./Header";
 import { HeroBanner } from "./Herobanner";
 import { CartDrawer } from "./CartDrawer";
 import { MenuSection } from "./MenuSection";
 import { Category, Food } from "@/lib/types";
+import { getCategories } from "@/lib/services/GetCategories";
+import { getFoods } from "@/lib/services/GetFoods";
 
 export type CartItem = Food & { quantity: number };
 
@@ -20,14 +22,12 @@ export const ClientContainer = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, foodRes] = await Promise.all([
-          fetch("https://food-delivery-express.onrender.com/categories"),
-          fetch("https://food-delivery-express.onrender.com/foods"),
+        const [cats, foodList] = await Promise.all([
+          getCategories(),
+          getFoods(),
         ]);
-        const catData = await catRes.json();
-        const foodData = await foodRes.json();
-        setCategories(catData.categories || []);
-        setFoods(foodData.foods || []);
+        setCategories(cats);
+        setFoods(foodList);
       } catch (err) {
         console.error(err);
       } finally {
@@ -61,6 +61,10 @@ export const ClientContainer = () => {
     });
   };
 
+  const deleteFromCart = (foodId: number) => {
+    setCart((prev) => prev.filter((item) => item.id !== foodId));
+  };
+
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce(
     (sum, item) => sum + Number(item.price) * item.quantity,
@@ -77,7 +81,8 @@ export const ClientContainer = () => {
       ...cat,
       foods: filteredFoods.filter((f) => f.foodCategoryId === cat.id),
     }))
-    .filter((cat) => cat.foods.length > 0);
+    .filter((cat) => cat.foods.length > 0)
+    .sort((a, b) => a.categoryName.localeCompare(b.categoryName));
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] font-sans">
@@ -97,21 +102,23 @@ export const ClientContainer = () => {
           >
             All
           </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() =>
-                setActiveCategory(activeCategory === cat.id ? null : cat.id)
-              }
-              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                activeCategory === cat.id
-                  ? "bg-[#ef4444] text-white"
-                  : "bg-[#2a2a2a] text-gray-300 hover:bg-[#333]"
-              }`}
-            >
-              {cat.categoryName}
-            </button>
-          ))}
+          {[...categories]
+            .sort((a, b) => a.categoryName.localeCompare(b.categoryName))
+            .map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() =>
+                  setActiveCategory(activeCategory === cat.id ? null : cat.id)
+                }
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  activeCategory === cat.id
+                    ? "bg-[#ef4444] text-white"
+                    : "bg-[#2a2a2a] text-gray-300 hover:bg-[#333]"
+                }`}
+              >
+                {cat.categoryName}
+              </button>
+            ))}
         </div>
 
         {loading ? (
@@ -120,18 +127,15 @@ export const ClientContainer = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-12">
-            {groupedByCategory.map((cat) => {
-              const Sec: any = MenuSection;
-              return (
-                <Sec
-                  key={cat.id}
-                  category={cat}
-                  cart={cart}
-                  onAdd={addToCart}
-                  onRemove={removeFromCart}
-                />
-              );
-            })}
+            {groupedByCategory.map((cat) => (
+              <MenuSection
+                key={cat.id}
+                category={cat}
+                cart={cart}
+                onAdd={addToCart}
+                onRemove={removeFromCart}
+              />
+            ))}
           </div>
         )}
       </main>
@@ -142,6 +146,7 @@ export const ClientContainer = () => {
         cart={cart}
         onAdd={addToCart}
         onRemove={removeFromCart}
+        onDelete={deleteFromCart}
         total={cartTotal}
       />
     </div>

@@ -1,14 +1,21 @@
 import { Food } from "../types";
 
-type GetFoods = {
-  foods: Food[];
-};
+export const getFoods = async (): Promise<Food[]> => {
+  try {
+    const res = await fetch(
+      "https://food-delivery-express.onrender.com/foods",
+      { cache: "no-store" },
+    );
 
-export const getFoods = async () => {
-  const response = await fetch(
-    "https://food-delivery-express.onrender.com/foods",
-  );
-  const data: GetFoods = await response.json();
+    if (!res.ok) {
+      console.error("getFoods failed:", res.status);
+      return [];
+    }
 
-  return data.foods;
+    const data = await res.json();
+    return data.foods ?? [];
+  } catch (err) {
+    console.error("getFoods error:", err);
+    return [];
+  }
 };

@@ -1,14 +1,21 @@
 import { Category } from "../types";
 
-type GetCategories = {
-  categories: Category[];
-};
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const res = await fetch(
+      "https://food-delivery-express.onrender.com/categories",
+      { cache: "no-store" },
+    );
 
-export const getCategories = async () => {
-  const response = await fetch(
-    "https://food-delivery-express.onrender.com/categories",
-  );
-  const data: GetCategories = await response.json();
+    if (!res.ok) {
+      console.error("getCategories failed:", res.status);
+      return [];
+    }
 
-  return data.categories;
+    const data = await res.json();
+    return data.categories ?? [];
+  } catch (err) {
+    console.error("getCategories error:", err);
+    return [];
+  }
 };
