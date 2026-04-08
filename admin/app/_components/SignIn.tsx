@@ -46,7 +46,8 @@ export const SignIn = () => {
           // ← fixed: capital A to match Prisma enum
           router.push("/foods");
         } else {
-          window.location.href = "https://food-delivery-client-side.vercel.app"; // ← fixed: added https://
+          window.location.href =
+            "https://https://food-delivery-client-liart.vercel.app/";
         }
       } else {
         let errorMessage = "Нэвтрэх мэдээлэл буруу байна";
