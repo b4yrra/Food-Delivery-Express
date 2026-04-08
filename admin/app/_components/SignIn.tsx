@@ -47,7 +47,7 @@ export const SignIn = () => {
           router.push("/foods");
         } else {
           window.location.href =
-            "https://https://food-delivery-client-liart.vercel.app/";
+            "https://https://food-delivery-client-liart.vercel.app";
         }
       } else {
         let errorMessage = "Нэвтрэх мэдээлэл буруу байна";
