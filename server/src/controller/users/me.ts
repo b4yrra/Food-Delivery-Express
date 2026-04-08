@@ -9,6 +9,7 @@ export const me = async (req: Request, res: Response) => {
     select: {
       email: true,
       password: true,
+      role: true, // ← fixed: was missing
     },
   });
 

@@ -25,7 +25,7 @@ export const loginUser = async (req: Request, res: Response) => {
         data: {
           userId: user.id,
           email: user.email,
-          role: "User",
+          role: user.role,
         },
       },
       "secret",
@@ -34,6 +34,6 @@ export const loginUser = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: "Success", secretToken });
   } else {
-    res.status(400).json({ message: "Invalid" });
+    res.status(400).json({ message: "Invalid password" });
   }
 };

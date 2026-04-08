@@ -25,15 +25,9 @@ export async function POST(request: NextRequest) {
   const data = await response.json();
   cookieStore.set("token", data.secretToken);
 
-  // Fetch user profile to get role
-  const meRes = await fetch(
-    "https://food-delivery-express.onrender.com/auth/me",
-    {
-      headers: { Authorization: `Bearer ${data.secretToken}` },
-    },
-  );
+  const payloadBase64 = data.secretToken.split(".")[1];
+  const payload = JSON.parse(Buffer.from(payloadBase64, "base64").toString());
+  const role = payload?.data?.role ?? "User";
 
-  const user = meRes.ok ? await meRes.json() : null;
-
-  return NextResponse.json({ success: true, role: user?.role ?? "user" });
+  return NextResponse.json({ success: true, role });
 }

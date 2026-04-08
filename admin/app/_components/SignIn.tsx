@@ -42,10 +42,11 @@ export const SignIn = () => {
       const res = await signIn({ email, password });
 
       if (res.success) {
-        if (res.role === "admin") {
+        if (res.role === "Admin") {
+          // ← fixed: capital A to match Prisma enum
           router.push("/foods");
         } else {
-          window.location.href = "food-delivery-client-side.vercel.app";
+          window.location.href = "https://food-delivery-client-side.vercel.app"; // ← fixed: added https://
         }
       } else {
         let errorMessage = "Нэвтрэх мэдээлэл буруу байна";
